@@ -24,11 +24,28 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Flutter version
-        run: flutter --version
-
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Create signing key
+        run: |
+          keytool -genkeypair \
+            -v \
+            -keystore android/app/upload-keystore.jks \
+            -storepass android123 \
+            -keypass android123 \
+            -alias upload \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=LiveScore, OU=Android, O=LiveScore, L=Lima, S=Lima, C=PE"
+
+          cat > android/key.properties <<EOF
+          storePassword=android123
+          keyPassword=android123
+          keyAlias=upload
+          storeFile=upload-keystore.jks
+          EOF
 
       - name: Build APK
         run: flutter build apk --release
@@ -38,3 +55,9 @@ jobs:
         with:
           name: LiveScore-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload signing key
+        uses: actions/upload-artifact@v4
+        with:
+          name: LiveScore-Signing-Key
+          path: android/app/upload-keystore.jks
